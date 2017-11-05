@@ -98,7 +98,7 @@ if denoise:
     decoded = Dense(inputDim, activation='linear',W_regularizer=l2(l2_penalty_ae))(encoded1)
     autoencoder = Model(input=input_cell, output=decoded)
     autoencoder.compile(optimizer='rmsprop', loss='mse')
-    autoencoder.fit(trainData_ae, trainTarget_ae, epochs=500, batch_size=128, shuffle=True,  validation_split=0.1,
+    autoencoder.fit(trainData_ae, trainTarget_ae, epochs=50, batch_size=128, shuffle=True,  validation_split=0.1,
                     callbacks=[mn.monitor(), cb.EarlyStopping(monitor='val_loss', patience=25,  mode='auto')])    
     source = autoencoder.predict(source)
     target = autoencoder.predict(target)
@@ -162,7 +162,7 @@ calibMMDNet.compile(optimizer=optimizer, loss=lambda y_true,y_pred:
 K.get_session().run(tf.global_variables_initializer())
 
 sourceLabels = np.zeros(source.shape[0])
-calibMMDNet.fit(source,sourceLabels,nb_epoch=500,batch_size=1000,validation_split=0.1,verbose=1,
+calibMMDNet.fit(source,sourceLabels,nb_epoch=25,batch_size=1000,validation_split=0.1,verbose=1,
            callbacks=[lrate, mn.monitorMMD(source, target, calibMMDNet.predict),
                       cb.EarlyStopping(monitor='val_loss',patience=50,mode='auto')])
 

@@ -2,3 +2,6 @@
 /.pydevproject
 /forJun/
 /fromJun/
+.ipynb_checkpoints
+*.png
+__pycache__

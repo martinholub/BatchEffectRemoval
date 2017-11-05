@@ -1,0 +1,60 @@
+---
+title: "JournalClub"
+author: "Martin Holub"
+date: "November 4, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Data
+
+```{r load_data}
+parent <- "C:/Users/marti/Downloads/kBET/kBET-master/data"
+umi <- read.table(file.path(parent, "reads.txt")) # or "molecules.txt"
+anno <- read.table(file.path(parent, "annotation.txt"), sep = "\t", header = TRUE)
+quality_single_cells <- scan(file.path(parent, "quality-single-cells.txt"), what = "character")
+
+# pick only quality cells
+umi.qc <- umi[, colnames(umi) %in% quality_single_cells]
+anno.qc <- anno[anno$sample_id %in% quality_single_cells, ]
+
+# remove zero read counts
+umi.qc <- umi.qc[rowSums(umi.qc) > 0, ]
+dim(umi.qc)
+
+# find and remove spike-in controls
+spikes <- grep('ERCC', rownames(umi.qc))
+umi.data <- umi.qc[-spikes, ]
+```
+``` {r extract_data}
+batches <- levels(unique(anno.qc$batch))
+
+batch1_id <- grep(batches[1], colnames(umi.data))
+batch2_id <- grep(batches[3], colnames(umi.data))
+parent <- "C:/Users/marti/git/sta426_jc"
+
+write.table(umi.data[, batch1_id], file = file.path(parent, "batch1_genes.txt"), quote = FALSE, sep = ",", row.names = FALSE, col.names = FALSE)
+write.table(umi.data[, batch2_id], file = file.path(parent, "batch2_genes.txt"), quote = FALSE, sep = ",", row.names = FALSE, col.names = FALSE)
+```
+
+``` {r do_kBET}
+batch_assign <- rep(1, length(batch1_id) + length(batch2_id))
+batch_assign[batch2_id] <- 2
+
+res.kBET <- kBET::kBET(umi.data[, c(batch1_id, batch2_id)], batch_assign, plot = TRUE)
+res.kBET$summary
+# The result varies between runs, but in all cases the rejection rate is very high. We will try to improve it by doing some batch coorrection.
+```
+The result varies between runs, but in all cases the rejection rate is very high. We will try to improve it by doing some batch coorrection.
+
+```{r batch_correct}
+corrected_subset <- limma::removeBatchEffect(umi.data[, c(batch1_id, batch2_id)], batch_assign)
+
+res.kBET2 <- kBET::kBET(corrected_subset, batch_assign, plot = TRUE)
+res.kBET2$summary
+```
+
+Although some correction was done, kBET doesn't show much of a change.
